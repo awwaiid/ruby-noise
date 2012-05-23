@@ -1,0 +1,3 @@
+[submodule "ruby-portaudio"]
+	path = ruby-portaudio
+	url = https://github.com/jvoorhis/ruby-portaudio.git
