@@ -1,7 +1,13 @@
 #!/usr/bin/env ruby
 
-# I got this PortAudio bindings right off of github
-# https://github.com/jvoorhis/ruby-portaudio.git
+# I got this PortAudio bindings right off of github via:
+#   git clone https://github.com/jvoorhis/ruby-portaudio.git
+#
+# But I include it here as a submodule. After clone do:
+#   git submodule update --init
+#
+# You'll also need to install the portaudio library itself I imagine
+
 require 'ruby-portaudio/lib/portaudio.rb'
 
 # Initialize the PortAudio interface
