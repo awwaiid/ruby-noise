@@ -8,6 +8,7 @@
 #
 # You'll also need to install the portaudio library itself I imagine
 
+$: << "." # Add the current directory to the search path
 require 'ruby-portaudio/lib/portaudio.rb'
 
 # Initialize the PortAudio interface
