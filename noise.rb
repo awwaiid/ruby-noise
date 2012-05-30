@@ -56,12 +56,16 @@ def play(gen)
 
   $stream.start
   loop do
-    $stream << $buffer.fill {
+    $buffer.fill {
       |frame, channel|
       #  $time         += $step
       #  $sample_count += 1
-      gen.call
+      sample = gen.call()
+      return if sample.nil?
+      sample
+      #  break if sample.nil?
     }
+    $stream << $buffer
   end
 end
 
@@ -111,19 +115,71 @@ def square(freq)
   }
 end
 
+# Ahhh.... sweet silence!
+def silence()
+  lambda {
+    0
+  }
+end
+
 # == Envelopes
 # Well. Just one.
 
-def envelope(attack, sustain, release)
+def envelope(gen, attack = 0, sustain = 0, release = 0)
+  gen     = genize gen
+  attack  = genize attack
+  sustain = genize sustain
+  release = genize release
 
+  attack_sample_count  = attack.call() * $sample_rate
+  sustain_sample_count = sustain.call() * $sample_rate
+  release_sample_count = release.call() * $sample_rate
+
+  mode = :attack
+  current_sample = 0
+
+  lambda {
+    current_sample += 1
+    loop do
+      case mode
+      when :attack
+        if current_sample > attack_sample_count
+          current_sample = 1
+          mode = :sustain
+        else
+          scale = current_sample.to_f / attack_sample_count
+          return gen.call() * scale
+        end
+      when :sustain
+        if current_sample > sustain_sample_count
+          current_sample = 1
+          mode = :release
+        else
+          return gen.call()
+        end
+      when :release
+        if current_sample > release_sample_count
+          current_sample = 1
+          mode = :attack
+          return nil
+        else
+          scale = 1 - (current_sample.to_f / release_sample_count)
+          return gen.call() * scale
+        end
+      end
+    end
+  }
 end
 
 #  play(noise())
 #  play(sine(440))
 
+# Force flush, helps debugging
+STDOUT.sync = true
 
 lfo = sine(5)
 freq = lambda { lfo.call * 100 + 440 }
-#play(sine(freq))
-play(square(freq))
+#  play(sine(freq))
+#  play(square(freq))
+play(envelope(square(freq), 2, 0, 2))
 
