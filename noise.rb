@@ -31,7 +31,7 @@ def genize x
   if x.is_a?(Proc)
     return x
   end
-  lambda { x }
+  lambda { x.to_f }
 end
 
 # Actually play the samples from a generator, sending them to our output
@@ -61,6 +61,7 @@ def play(gen)
       #  $time         += $step
       #  $sample_count += 1
       sample = gen.call()
+      #  puts "Sample: " + sample.to_s
       return if sample.nil?
       sample
       #  break if sample.nil?
@@ -171,6 +172,41 @@ def envelope(gen, attack = 0, sustain = 0, release = 0)
   }
 end
 
+# == Combinators
+
+# Play one gen after another
+def seq(gens)
+  gens = gens.map! { |g| genize g }
+  cur_gen = gens.shift
+  lambda {
+    if cur_gen.nil?
+      nil
+    else
+      sample = cur_gen.call
+      if sample.nil?
+        cur_gen = gens.shift
+        return nil if cur_gen.nil?
+        cur_gen.call
+      else
+        sample
+      end
+    end
+  }
+end
+
+# Play all the gens at once
+def sum(gens)
+  gens = gens.map! { |g| genize g }
+  lambda {
+    samples = gens.map { |g| g.call }
+    samples = samples.compact
+    return nil if samples.length == 0
+    sample = samples.inject(0.0, :+)
+    sample /= samples.length if samples.length > 0 # scale. Needed?
+    sample
+  }
+end
+
 #  play(noise())
 #  play(sine(440))
 
@@ -178,8 +214,39 @@ end
 STDOUT.sync = true
 
 lfo = sine(5)
-freq = lambda { lfo.call * 100 + 440 }
-#  play(sine(freq))
-#  play(square(freq))
-play(envelope(square(freq), 2, 0, 2))
+wobble_freq = lambda { lfo.call * 100 + 440 }
+#  play(sine(wobble_freq))
+#  play(square(wobble_freq))
+
+
+
+#  play(envelope(square(440), 2, 0, 2))
+#  play(envelope(square(wobble_freq), 2, 0, 2))
+#  play(envelope(sine(wobble_freq), 2, 0, 2))
+
+# Play a sequence
+#  play(
+  #  seq([
+    #  envelope(square(440), 2, 0, 2),
+    #  envelope(square(wobble_freq), 2, 0, 2),
+  #  ])
+#  )
+
+
+#  play(
+  #  sum([
+    #  envelope(square(440), 2, 0, 2),
+    #  envelope(square(wobble_freq), 2, 0, 2),
+  #  ])
+#  )
+
+play(
+  sum([
+    envelope(square(440), 2, 0, 2),
+    envelope(square(220), 2, 0, 2),
+    envelope(square(880), 2, 0, 2),
+    envelope(square(660), 2, 0, 2),
+    envelope(square(1200), 2, 0, 2),
+  ])
+)
 
