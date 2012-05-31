@@ -15,9 +15,15 @@ require 'ruby-portaudio/lib/portaudio.rb'
 PortAudio.init
 
 # Block size defines how many samples we buffer to send off at once
-$block_size     = 8096
+$block_size     = 512
+#  $block_size     = 1024
+#  $block_size     = 4096
+#  $block_size     = 8096
+#  $block_size     = 16384
 # Sample rate indicates how many samples per second we actually output
+#  $sample_rate    = 8000
 $sample_rate    = 44100
+#  $sample_rate    = 48000
 # Step is just a shortcut for how long is an individual sample
 $step           = 1.0/$sample_rate
 # Just as a handy favor, keep track of the absolute time and sample count.
@@ -207,22 +213,66 @@ def sum(gens)
   }
 end
 
+def mousefreq()
+  count = 0
+  x = 0.0
+  lambda {
+    count += 1
+    if count  % 1000 == 0
+      x = `xmousepos`.split[0].to_f
+    end
+    x
+  }
+end
+
+def mousevol()
+  count = 0
+  y = 0.0
+  lambda {
+    count += 1
+    if count  % 1000 == 0
+      y = `xmousepos`.split[1].to_f / 600
+    end
+    y
+  }
+end
+
+def amp(gen, amount)
+  gen = genize gen
+  amount = genize amount
+  lambda {
+    sample = gen.call
+    mult = amount.call
+    return nil if sample.nil? or mult.nil?
+    sample * mult
+  }
+end
+
 #  play(noise())
 #  play(sine(440))
 
-# Force flush, helps debugging
-STDOUT.sync = true
-
+# Low-Frequency-Oscillator (LFO)
 lfo = sine(5)
+
+# Wobble frequency from 340 to 540
 wobble_freq = lambda { lfo.call * 100 + 440 }
+
 #  play(sine(wobble_freq))
 #  play(square(wobble_freq))
 
 
-
+# Envelope examples
 #  play(envelope(square(440), 2, 0, 2))
 #  play(envelope(square(wobble_freq), 2, 0, 2))
 #  play(envelope(sine(wobble_freq), 2, 0, 2))
+
+# Wobbly enveloped frequency
+#  play(
+    #  envelope(square(440), 2, 0, 2),
+    #  square(envelope(wobble_freq, 2, 0, 2)),
+  #  ])
+#  )
+
 
 # Play a sequence
 #  play(
@@ -233,6 +283,7 @@ wobble_freq = lambda { lfo.call * 100 + 440 }
 #  )
 
 
+
 #  play(
   #  sum([
     #  envelope(square(440), 2, 0, 2),
@@ -240,13 +291,21 @@ wobble_freq = lambda { lfo.call * 100 + 440 }
   #  ])
 #  )
 
-play(
-  sum([
-    envelope(square(440), 2, 0, 2),
-    envelope(square(220), 2, 0, 2),
-    envelope(square(880), 2, 0, 2),
-    envelope(square(660), 2, 0, 2),
-    envelope(square(1200), 2, 0, 2),
-  ])
-)
 
+#  play(
+  #  sum([
+    #  envelope(square(440), 2, 0, 2),
+    #  envelope(square(220), 2, 0, 2),
+    #  envelope(square(880), 2, 0, 2),
+    #  envelope(square(660), 2, 0, 2),
+    #  envelope(square(1200), 2, 0, 2),
+  #  ])
+#  )
+
+# Synth!
+#  play(
+  #  amp(
+    #  sine( mousefreq() ),
+    #  mousevol()
+  #  )
+#  );
