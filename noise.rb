@@ -248,8 +248,21 @@ def amp(gen, amount)
   }
 end
 
+def formula(f)
+  bits = 8
+  sample_rate = 8000
+  formula_increment = sample_rate / $sample_rate.to_f
+  max = 2 ** bits
+  t = 0
+  lambda {
+    t += formula_increment
+    (f.call(t.floor) % max - (max/2))/(max/2)
+  }
+end
+
+
 #  play(noise())
-#  play(sine(440))
+#play(sine(440))
 
 # Low-Frequency-Oscillator (LFO)
 lfo = sine(5)
@@ -301,6 +314,10 @@ wobble_freq = lambda { lfo.call * 100 + 440 }
     #  envelope(square(1200), 2, 0, 2),
   #  ])
 #  )
+
+# Fancy formula based music!
+# See http://countercomplex.blogspot.com/2011/10/algorithmic-symphonies-from-one-line-of.html
+play(formula(lambda { |t| t*(42&t>>10) }))
 
 # Synth!
 #  play(
